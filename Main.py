@@ -1,141 +1,139 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QTextEdit, QVBoxLayout, QWidget, QFileDialog, QMessageBox, QListWidget, QDialog
-from PyQt5.QtCore import QTimer
 import subprocess
-import ctypes
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QGroupBox, QRadioButton
+from PyQt5.QtCore import Qt
 
-def is_admin():
-    try:
-        return ctypes.windll.shell32.IsUserAnAdmin() != 0
-    except Exception as e:
-        print("Exception occurred while checking admin privileges:", e)
-        return False
 
-class SelectWindowsVersionWindow(QDialog):
-    def __init__(self, windows_versions):
-        super().__init__()
-
-        self.setWindowTitle("Select Windows Version")
-
-        self.layout = QVBoxLayout()
-
-        label = QLabel("Select Windows Version:")
-        self.layout.addWidget(label)
-
-        self.version_listbox = QListWidget()
-        for version in windows_versions.keys():
-            self.version_listbox.addItem(version)
-        self.layout.addWidget(self.version_listbox)
-
-        self.ok_button = QPushButton("OK")
-        self.ok_button.clicked.connect(self.on_ok)
-        self.layout.addWidget(self.ok_button)
-
-        self.setLayout(self.layout)
-
-        self.selected_version = ""
-        self.selected_product_key = ""
-
-    def on_ok(self):
-        selected_items = self.version_listbox.selectedItems()
-        if selected_items:
-            self.selected_version = selected_items[0].text()
-            self.selected_product_key = windows_versions.get(self.selected_version)
-            self.accept()
-        else:
-            QMessageBox.critical(self, "Error", "Please select a Windows version.")
-
-class MainWindow(QMainWindow):
+class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("Windows Activation Tool")
+        self.setGeometry(100, 100, 400, 200)
 
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
+        self.setStyleSheet("background-color: #000000; color: #ffffff;")
 
         self.layout = QVBoxLayout()
 
-        label = QLabel("Windows Activation Tool")
-        font = label.font()
-        font.setFamily("Helvetica")
-        font.setPointSize(16)
-        label.setFont(font)
-        self.layout.addWidget(label)
+        self.label = QLabel("Welcome to Windows Activation Tool")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(self.label)
 
-        self.run_part_one_button = QPushButton("Part One")
-        self.run_part_one_button.clicked.connect(self.run_part_one)
-        self.layout.addWidget(self.run_part_one_button)
+        self.buttons_group = QGroupBox()
+        self.buttons_group.setStyleSheet("QGroupBox { border: none; }")
+        self.buttons_layout = QHBoxLayout()
 
-        self.run_part_two_button = QPushButton("Part Two")
-        self.run_part_two_button.clicked.connect(self.run_part_two)
-        self.layout.addWidget(self.run_part_two_button)
+        self.install_button = QPushButton("Install Key (Run First)")
+        self.install_button.clicked.connect(self.run_part1)
+        self.install_button.setStyleSheet(
+            "QPushButton {"
+            "background-color: #4CAF50;"
+            "border: none;"
+            "color: #ffffff;"
+            "padding: 10px;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #45a049;"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: #367d39;"
+            "}"
+        )
+        self.buttons_layout.addWidget(self.install_button)
 
-        self.output_text = QTextEdit()
-        self.layout.addWidget(self.output_text)
+        self.activate_button = QPushButton("Activate Key")
+        self.activate_button.clicked.connect(self.run_part2)
+        self.activate_button.setStyleSheet(
+            "QPushButton {"
+            "background-color: #4CAF50;"
+            "border: none;"
+            "color: #ffffff;"
+            "padding: 10px;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #45a049;"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: #367d39;"
+            "}"
+        )
+        self.buttons_layout.addWidget(self.activate_button)
 
-        self.central_widget.setLayout(self.layout)
+        self.buttons_group.setLayout(self.buttons_layout)
+        self.layout.addWidget(self.buttons_group)
 
-    def run_part_one(self):
-        select_windows_version_window = SelectWindowsVersionWindow(windows_versions)
-        if select_windows_version_window.exec_() == QDialog.Accepted:
-            selected_version = select_windows_version_window.selected_version
-            selected_product_key = select_windows_version_window.selected_product_key
+        self.theme_toggle_button = QPushButton()
+        self.theme_toggle_button.setFixedSize(20, 20)
+        self.theme_toggle_button.setCheckable(True)
+        self.theme_toggle_button.setChecked(True)
+        self.theme_toggle_button.clicked.connect(self.toggle_theme)
+        self.theme_toggle_button.setStyleSheet(
+            "QPushButton {"
+            "background-color: #eeeeee;"
+            "border: none;"
+            "}"
+            "QPushButton:checked {"
+            "background-color: #222222;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #dddddd;"
+            "}"
+        )
 
-            if selected_version and selected_product_key:
-                self.run_part_one_button.setEnabled(False)
-                self.run_part_two_button.setEnabled(False)
-                self.output_text.clear()
-                self.output_text.append(f"Selected Windows Version: {selected_version}\n")
-                self.output_text.append("Running Part One...\n\n")
-                for command in commands:
-                    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-                    self.output_text.append(f"{process.communicate()[0]}\n\n")
+        self.layout.addWidget(self.theme_toggle_button, alignment=Qt.AlignRight | Qt.AlignTop)
 
-                activation_command = f"slmgr /ipk {selected_product_key}"
-                process = subprocess.Popen(activation_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-                self.output_text.append(f"Activating Windows {selected_version}...\n{process.communicate()[0]}\n\n")
+        self.setLayout(self.layout)
 
-                self.output_text.append("Part one is now finished. Please restart the computer and run Part Two.")
-                self.timer = QTimer()
-                self.timer.singleShot(15000, self.enable_buttons)
-            else:
-                QMessageBox.critical(self, "Error", "Please select a Windows version.")
+    def run_part1(self):
+        self.label.setText("Running Part One...")
 
-    def run_part_two(self):
-        self.output_text.clear()
-        self.output_text.append("Running Part Two...\n\n")
-        for command in commands_part_two:
-            process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-            self.output_text.append(f"{process.communicate()[0]}\n\n")
-        self.output_text.append("You should now have Windows 11 Pro. I would suggest restarting your PC, but it is not needed.")
+        commands = [
+            "cscript //nologo %windir%\\system32\\slmgr.vbs /upk",
+            "cscript //nologo %windir%\\system32\\slmgr.vbs /cpky",
+            "cscript //nologo %windir%\\system32\\slmgr.vbs /ckms",
+            "Dism /online /Get-TargetEditions",
+            "sc config LicenseManager start= auto",
+            "net start LicenseManager",
+            "sc config wuauserv start= auto",
+            "net start wuauserv",
+            "changepk.exe /productkey VK7JG-NPHTM-C97JM-9MPGT-3V66T"
+        ]
 
-    def enable_buttons(self):
-        self.run_part_one_button.setEnabled(True)
-        self.run_part_two_button.setEnabled(True)
+        for cmd in commands:
+            subprocess.run(cmd, shell=True)
 
-# Windows versions and their product keys
-windows_versions = {
-    "Windows 11 Home": "YTMG3-N6DKC-DKB77-7M9GH-8HVX7",
-    "Windows 11 Pro": "VK7JG-NPHTM-C97JM-9MPGT-3V66T",
-    "Windows 11 Enterprise": "XGVPP-NMH47-7TTHJ-W3FW7-8HV2C"
-}
+        self.label.setText("Part One finished. Please restart the computer and run part two.")
 
-# Commands for Part One
-commands = [
-    "cscript //nologo %windir%\\system32\\slmgr.vbs /upk",
-    "cscript //nologo %windir%\\system32\\slmgr.vbs /cpky",
-    "cscript //nologo %windir%\\system32\\slmgr.vbs /ckms",
-    "Dism /online /Get-TargetEditions",
-    "sc config LicenseManager start= auto & net start LicenseManager",
-    "sc config wuauserv start= auto & net start wuauserv",
-]
+    def run_part2(self):
+        self.label.setText("Running Part Two...")
 
-# Commands for Part Two
-commands_part_two = [
-    "slmgr /skms kms8.msguides.com",
-    "slmgr /ato"
-]
+        commands = [
+            "slmgr /ipk W269N-WFGWX-YVC9B-4J6C9-T83GX",
+            "slmgr /skms kms8.msguides.com",
+            "slmgr /ato"
+        ]
+
+        for cmd in commands:
+            subprocess.run(cmd, shell=True)
+
+        self.label.setText("Part Two finished. You should now have Windows 11 Pro.")
+
+    def toggle_theme(self):
+        if self.theme_toggle_button.isChecked():
+            self.setStyleSheet("")
+            self.activate_button.setStyleSheet("")
+            self.install_button.setStyleSheet("")
+        else:
+            self.setStyleSheet(
+                "background-color: #2b2b2b; color: #ffffff"
+            )
+            self.activate_button.setStyleSheet(
+                "background-color: #4CAF50; color: #ffffff"
+            )
+            self.install_button.setStyleSheet(
+                "background-color: #4CAF50; color: #ffffff"
+            )
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
