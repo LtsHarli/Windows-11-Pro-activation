@@ -8,4 +8,4 @@ Also if you don't know what any of this shit is DONT RUN RANDOM .BAT FILES
 
 After running part one please restart and then run part two
 
-MAIN.PY DOES NOT WORK PLEASE USE THE BAT FILES!
+If you use main.py pleaes run it as admin
